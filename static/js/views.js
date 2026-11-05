@@ -1,10 +1,10 @@
 /* Pages: Overview, Classroom AC, Server scheduling, Data */
 /* ---------- views ---------- */
 const f0=x=>x.toFixed(0),V={};
-V.overview={html(){const wk=week(),B=wk.reduce((a,x)=>a+x.b,0),O=wk.reduce((a,x)=>a+x.o,0),p=pick(),sv=1-p.f[1]/st.base.f[1];
+V.overview={html(){const wk=week(),B24=week(24).reduce((a,x)=>a+x.b,0),B=wk.reduce((a,x)=>a+x.b,0),O=wk.reduce((a,x)=>a+x.o,0),p=pick(),sv=1-p.f[1]/st.base.f[1];
  const mx=Math.max(...wk.map(x=>x.b)),bars=wk.map((x,i)=>{const X=60+i*100,h1=x.b/mx*170,h2=x.o/mx*170;return`<rect x="${X}" y="${200-h1}" width="26" height="${h1}" rx="4" fill="var(--line)"/><rect x="${X+30}" y="${200-h2}" width="26" height="${h2}" rx="4" fill="var(--acc)"/><text x="${X+28}" y="222" text-anchor="middle">${lab(DATES[i]).slice(0,3)}</text>`}).join('');
  return`<h1>Campus energy</h1><p class="sub">Two of the largest loads on campus, optimised with explainable controllers. Numbers are from simulated data for this prototype.</p>
- <div class="grid g3"><div class="card"><h3>Classroom AC saved</h3><div class="big">${f0((1-O/B)*100)}%</div><div class="note">vs. all rooms at 22°C, 8am–6pm</div></div>
+ <div class="grid g3"><div class="card"><h3>Classroom AC saved</h3><div class="big">${f0((1-O/B)*100)}%</div><div class="note">vs. always-on at 22°C · ${f0((1-O/B24)*100)}% vs. 24°C</div></div>
  <div class="card"><h3>Server energy saved</h3><div class="big">${f0(sv*100)}%</div><div class="note">vs. round-robin job placement</div></div>
  <div class="card"><h3>Saved this week</h3><div class="big">${f0(B-O)} kWh</div><div class="note">AC only, ${rooms.length} rooms</div></div></div>
  <div class="card sp"><h3>Daily AC consumption (kWh)</h3><svg viewBox="0 0 580 235" width="100%"><line x1="40" x2="570" y1="200" y2="200" stroke="var(--line)"/>${bars}</svg>
@@ -14,7 +14,7 @@ V.classrooms={html(){return`<h1>Classroom AC</h1><p class="sub">A fuzzy controll
  <div class="bar"><div><label>Day</label><select id="d">${DATES.map(d=>`<option value="${d}">${lab(d)}</option>`).join('')}</select></div>
  <div><label>Hour: <b id="hl"></b></label><input type="range" id="h" min="8" max="17" style="width:220px"></div><div class="note" id="wx"></div></div><div class="card" id="out"></div>`},
  init(){$('#d').value=st.d;$('#h').value=st.h;const u=()=>{st.d=$('#d').value;st.h=+$('#h').value;const w=W[st.d][st.h],T=w.t+w.s;$('#hl').textContent=st.h+':00';
-  let on=0,base=0;const rows=rooms.map(rm=>{const x=decide(rm,st.d,st.h),c=TT[rm.n][st.d][st.h];on+=x.kw;base+=kw(rm,T,22,c?c.att:0);
+  let on=0,base=0;const rows=rooms.map(rm=>{const x=decide(rm,st.d,st.h),c=TT[rm.n][st.d][st.h];on+=x.kw;base+=baseline(rm,st.d)[st.h];
    return`<tr><td>${rm.n}<div class="note">${rm.area} m²</div></td><td>${c?c.c+' · '+c.att+'/'+rm.cap:'<span class="note">—</span>'}</td><td><span class="pill ${x.st.split('-')[0].split(' ')[0]}">${x.st}</span></td><td>${x.set?x.set.toFixed(1)+'°C':'—'}</td><td>${x.kw.toFixed(1)} kW</td><td class="m">${x.why}</td></tr>`}).join('');
   $('#wx').innerHTML=`Outside ${w.t.toFixed(0)}°C · ${w.cond}<br>Drawing <b>${on.toFixed(0)} kW</b> vs ${base.toFixed(0)} kW always-on`;
   $('#out').innerHTML=`<table><tr><th>Room</th><th>Class</th><th>Decision</th><th>Setpoint</th><th>Load</th><th>Why</th></tr>${rows}</table>`};$('#d').onchange=$('#h').oninput=u;u()}};
@@ -28,14 +28,14 @@ V.servers={html(){return`<h1>Server scheduling</h1><p class="sub">NSGA-II assign
   <circle cx="${X(B.f[0])}" cy="${Y(B.f[1])}" r="6" fill="none" stroke="var(--mut)" stroke-width="1.5"/><text x="${X(B.f[0])-8}" y="${Y(B.f[1])-12}" text-anchor="end">Round-robin</text>
   <text x="285" y="292" text-anchor="middle">Makespan (min)</text><text x="14" y="140" transform="rotate(-90 14 140)" text-anchor="middle">Energy (Wh)</text></svg>`;
   const kv=(a,b,c)=>`<div class="kv"><span>${a}</span><span><b>${b}</b> <span class="note">${c}</span></span></div>`;
-  const rows=SV.map((s,j)=>{const b=p.b[j],c=p.g.filter(x=>x==j).length;return`<div class="srv"><span>${s.n}</span><div class="trk"><div style="width:${b/p.f[0]*100}%"></div></div><span class="note">${c?c+' jobs':'powered off'}</span></div>`}).join('');
-  $('#out').innerHTML=`<div class="grid g2"><div class="card"><h3>Pareto front · ${fr.length} solutions</h3>${sc}</div><div class="card"><h3>Selected plan</h3>${kv('Makespan',f0(p.f[0])+' min','vs '+f0(B.f[0]))}${kv('Energy',f0(p.f[1])+' Wh','vs '+f0(B.f[1]))}${kv('Machines on',p.b.filter(x=>x>0).length+' of '+SV.length,'')}</div></div><div class="card sp"><h3>Load per machine</h3>${rows}</div>`};
+  const rows=SV.map((s,j)=>{const b=p.b[j],c=p.g.filter(x=>x==j).length;return`<div class="srv"><span>${s.n}</span><div class="trk"><div style="width:${b/p.f[0]*100}%"></div></div><span class="note">${c?c+' jobs':SV[j].ao?'always on':'powered off'}</span></div>`}).join('');
+  $('#out').innerHTML=`<div class="grid g2"><div class="card"><h3>Pareto front · ${fr.length} solutions</h3>${sc}</div><div class="card"><h3>Selected plan</h3>${kv('Makespan',f0(p.f[0])+' min','vs '+f0(B.f[0]))}${kv('Energy',f0(p.f[1])+' Wh','vs '+f0(B.f[1]))}${kv('Facility energy',f0(p.f[1]*PUE)+' Wh','PUE '+PUE)}${kv('Machines on',SV.filter((x,j)=>p.b[j]>0||x.ao).length+' of '+SV.length,'')}</div></div><div class="card sp"><h3>Load per machine</h3>${rows}</div>`};
   $('#n').oninput=()=>{st.n=+$('#n').value;$('#nl').textContent=st.n};$('#p').oninput=()=>{st.pref=+$('#p').value;u()};
   $('#go').onclick=()=>{$('#go').textContent='Running…';setTimeout(()=>{runOpt();u();$('#go').textContent='Re-run optimiser'},30)};u()}};
-const FILES={classrooms:'room, building, area_m2, capacity, enrolled',timetable:'room, weekday (0–4), hour, course, attendance',weather:'date, hour, temp_c, humidity_pct, condition, solar_wm2',servers:'server, speed, idle_w, active_w',tasks:'task_id, arrival_min, size_units, priority'};
+const FILES={classrooms:'room, building, area_m2, capacity, enrolled',timetable:'room, weekday (0–4), hour, course, attendance',weather:'date, hour, temp_c, humidity_pct, condition, solar_wm2',servers:'server, speed, idle_w, active_w, boot_min (optional), always_on (optional)',tasks:'task_id, arrival_min, size_units, priority'};
 V.data={html(){return`<h1>Data</h1><p class="sub">The optimisers read everything from CSV files held by the backend. Replace any file with your own, or regenerate the simulated set.</p>
  <div class="card"><table><tr><th>Dataset</th><th>Rows</th><th>Required columns</th><th></th></tr>${Object.keys(FILES).map(k=>`<tr><td>${k}</td><td>${META.rows[k]}</td><td class="m">${FILES[k]}</td><td><label class="pill" style="cursor:pointer">Upload CSV<input type="file" accept=".csv" data-k="${k}" hidden></label></td></tr>`).join('')}</table></div>
  <div class="bar sp"><div><label>Seed</label><input type="number" id="sd" value="7" min="1" style="width:90px"></div><div><label>Days of weather</label><input type="number" id="dy" value="30" min="7" max="90" style="width:90px"></div><button class="b" id="rg">Regenerate simulated data</button></div><p class="note" id="msg"></p>`},
- init(){const done=async r=>{const j=await r.json();if(!r.ok){$('#msg').textContent=j.error;return}try{await load();runOpt();go();$('#msg').textContent='Data reloaded.'}catch(e){$('#msg').textContent='Could not load that data.'}};
+ init(){if(!LIVE){$('#msg').textContent='Backend offline: uploads and regeneration need python server.py.';document.querySelectorAll('#main input,#main button').forEach(e=>e.disabled=true);return}const done=async r=>{const j=await r.json();if(!r.ok){$('#msg').textContent=j.error;return}try{await load();runOpt();go();$('#msg').textContent='Data reloaded.'}catch(e){$('#msg').textContent='Could not load that data.'}};
   document.querySelectorAll('input[type=file]').forEach(i=>i.onchange=async()=>done(await fetch('/api/upload/'+i.dataset.k,{method:'POST',body:await i.files[0].text()})));
   $('#rg').onclick=async()=>done(await fetch('/api/regenerate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seed:+$('#sd').value||7,days:+$('#dy').value||30})}))}};

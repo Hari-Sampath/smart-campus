@@ -39,13 +39,14 @@ for d in range(a.days):
         t += random.gauss(0, .4) - (4 if cond == "Rain" else 1.5 if cond == "Cloudy" else 0)
         sun = max(0, math.sin((h - 6) / 12 * math.pi)) * 900 * cloud
         wx.append(((day0 + dt.timedelta(days=d)).isoformat(), h, round(t, 1),
-                   round(random.uniform(45, 90 if cond == "Rain" else 65)), cond, round(sun)))
+                   round(random.uniform(*{"Clear": (35, 60), "Cloudy": (55, 78), "Rain": (82, 96)}[cond])), cond, round(sun)))
 write("weather", ["date", "hour", "temp_c", "humidity_pct", "condition", "solar_wm2"], wx)
 
-# Servers: speed (work units/min), idle and active power in watts; faster machines cost more energy per unit of work
-servers = [("Edge-1", 1, 20, 45), ("Edge-2", 1, 20, 45), ("Std-1", 2, 50, 120),
-           ("Std-2", 2, 50, 120), ("Perf-1", 3, 90, 240), ("GPU-1", 5, 200, 600)]
-write("servers", ["server", "speed", "idle_w", "active_w"], servers)
+# Servers: speed (work units/min), idle and active power (W), boot time (min), always_on pins service nodes
+# Faster machines cost more energy per unit of work
+servers = [("Edge-1", 1, 20, 45, 3, 0), ("Edge-2", 1, 20, 45, 3, 0), ("Std-1", 2, 50, 120, 4, 1),
+           ("Std-2", 2, 50, 120, 4, 0), ("Perf-1", 3, 90, 240, 5, 0), ("GPU-1", 5, 200, 600, 6, 0)]
+write("servers", ["server", "speed", "idle_w", "active_w", "boot_min", "always_on"], servers)
 
 # Jobs: log-normal sizes (many small, a few heavy), arrivals over a working day
 tasks = [(i, random.randint(0, 600), round(math.exp(random.uniform(2.8, 5.2))), random.choice([1, 1, 2, 3]))

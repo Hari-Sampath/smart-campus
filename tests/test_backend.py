@@ -43,6 +43,28 @@ class Backend(unittest.TestCase):
         self.assertEqual(len(self.c.get("/api/data").get_json()["servers"]), 1)
         server.generate(seed=1, days=14)  # restore
 
+    def test_optional_server_columns_default(self):
+        self.c.post("/api/upload/servers", data=SERVERS_OK)
+        s = self.c.get("/api/data").get_json()["servers"][0]
+        self.assertEqual((s["boot_min"], s["always_on"]), (3.0, 0))
+        server.generate(seed=1, days=14)
+
+    def test_generated_servers_have_always_on_node(self):
+        s = self.c.get("/api/data").get_json()["servers"]
+        self.assertTrue(any(x["always_on"] == 1 for x in s))
+
+    def test_humidity_follows_weather(self):
+        w = self.c.get("/api/data").get_json()["weather"]
+        rain = [x["humidity_pct"] for x in w if x["condition"] == "Rain"]
+        clear = [x["humidity_pct"] for x in w if x["condition"] == "Clear"]
+        if rain and clear:
+            self.assertGreater(min(rain), max(clear))
+
+    def test_sample_bundle_written(self):
+        p = os.path.join(self.tmp.name, "sample.js")
+        server.write_sample(p)
+        self.assertIn("window.SEVA_SAMPLE=", open(p, encoding="utf-8").read())
+
     def test_upload_missing_columns(self):
         r = self.c.post("/api/upload/servers", data="a,b\n1,2\n")
         self.assertEqual(r.status_code, 400)
