@@ -31,5 +31,11 @@ td{padding:14px 12px;border-top:1px solid var(--line)}td.m{color:var(--mut);font
 .kv{display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line)}.kv:first-of-type{border:0}
 .chip{display:inline-block;border:1px dashed var(--line);border-radius:99px;padding:4px 14px;margin:6px 8px 0 0;color:var(--mut);font-size:13px}
 text{fill:var(--mut);font:12px "DM Sans",sans-serif}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.table-wrap table{min-width:820px}
+.range-label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}.range-label b{color:var(--ink);float:right}
+input[type=range]{width:100%;display:block;margin:0 0 8px;accent-color:var(--acc)}
+details summary{cursor:pointer;font-weight:500}details[open] summary{margin-bottom:14px}
+.pill.blocked{background:color-mix(in srgb,#b94b3d 18%,transparent);color:#b94b3d}
+#ac-chart{overflow-x:auto}#ac-chart svg{min-width:540px}
 @media(max-width:760px){aside{width:68px}aside span,aside small,aside .brand b{display:none}main{padding:28px 20px}.g3,.g2{grid-template-columns:1fr}}
 .demo{margin:0 0 28px;padding:10px 14px;border:1px dashed var(--line);border-radius:10px;color:var(--mut);font-size:13px}
