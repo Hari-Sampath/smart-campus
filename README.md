@@ -46,7 +46,18 @@ A solution assigns each job to one server. Two objectives are minimised together
 1. **Makespan**: when the slowest server finishes. A machine that starts from off pays its boot time first.
 2. **Energy (Wh)**: for each powered-on server, boot time at idle power, active power while working, and idle power until the batch ends. Unused servers are switched off, except **always-on** nodes (the service and storage machines), which draw idle power for the whole run. A facility figure applies a PUE of 1.6 for cooling and power conversion.
 
-Faster machines cost more energy per unit of work, so the objectives genuinely conflict. NSGA-II returns a **Pareto front** and the UI lets you slide from fastest to greenest. Settings: population 120, 250 generations, fast non-dominated sorting, crowding distance, binary tournament, uniform crossover, per-gene mutation (rate 1.5/n), and an initial population seeded with plans that use only the *k* most efficient machines. The baseline is round-robin placement.
+Faster machines cost more energy per unit of work, so the objectives genuinely conflict. NSGA-II returns a **Pareto front** and the UI lets you slide from fastest to greenest. Settings: population 120, 250 generations, fast non-dominated sorting, crowding distance, binary tournament, uniform crossover, per-gene mutation (rate 1.5/n), and an initial population seeded with plans that use only the *k* most efficient machines (it is not seeded with the baseline heuristics, so the benchmark stays independent).
+
+#### Benchmark: what clusters actually do
+
+Round-robin is how web load balancers spread requests, not how batch clusters place jobs, so it is not used as a baseline. Slurm gives each queued job to the lowest-weight node that fits, with older, slower nodes conventionally weighted lowest, and normally leaves idle nodes on. The research literature on mapping independent jobs onto mixed machines (Braun et al., 2001) uses first-free, minimum-completion-time and Min-Min. The Server scheduling page benchmarks the selected plan against four references on the same jobs and machines:
+
+1. **Slurm-style first-free**: queue order, lowest-weight idle node, nodes always on (what most sites run today).
+2. **MCT**: queue order, each job to the machine where it finishes first, always on.
+3. **Min-Min**: repeatedly place the job and machine pair that finishes earliest, always on.
+4. **Min-Min with idle machines switched off**: the strongest simple method, with power management.
+
+Results on the default simulated data (batch of 20, 40, 60 and 80 jobs): the NSGA-II front always contains a plan that is no slower and no more energy-hungry than all four references. At the same finish time the extra saving over Slurm-style placement is small, 0.3% to 6%, because these heuristics are already close to optimal for makespan. The large saving, about 38–42% less energy, comes from accepting a finish time roughly three times longer, so it only suits deferrable batch work. The Overview card reports the same-finish figure first for that reason. The batch is treated as static (arrival times are ignored); replay real job logs before quoting numbers.
 
 **Where this applies.** Scheduling suits batch, HPC and research nodes. It does not apply to web, database, storage or network servers, which must stay on, and server-room AC must never be switched off or set back; the research brief explains why and describes a safe adoption path (measure, shadow mode, pilot, review).
 
@@ -83,7 +94,8 @@ seva-energy/
 │       └── main.js      Router, sidebar toggle, start-up
 └── tests/
     ├── test_backend.py  API and generator tests
-    └── smoke.test.js    Controller and optimiser checks
+    ├── smoke.test.js    Router, controller, optimiser and benchmark checks (Node)
+    └── e2e_browser.py   Optional real-browser check (Playwright)
 ```
 
 Scripts are plain classic scripts that share globals and load in the order above.
@@ -127,10 +139,11 @@ The generator produces 10 rooms, a timetable at about 62% slot utilisation with 
 
 ```bash
 python -m unittest discover -s tests     # backend, uploads, generator (14 tests)
-node tests/smoke.test.js                 # controller and optimiser (needs Node)
+node tests/smoke.test.js                 # router, controller, optimiser, benchmarks (needs Node)
+python tests/e2e_browser.py [url]        # optional: real Chromium via Playwright; defaults to opening index.html from disk
 ```
 
-The Node test checks that setpoints stay within 24–28 °C, that the optimised AC beats both baselines, that the Pareto front is a real trade-off, and that every page renders.
+The Node test checks that a fresh page load (no URL hash) shows the overview rather than an error, that setpoints stay within 24–28 °C, that the optimised AC beats both baselines, that the Pareto front is a real trade-off, that every baseline is beaten by some front plan, and that every page renders. The browser test opens the app the way you would, clicks each menu item and collapses the sidebar.
 
 ## Assumptions and limitations
 
@@ -138,7 +151,7 @@ The Node test checks that setpoints stay within 24–28 °C, that the optimised 
 - The room model has one temperature node. It does not capture wall heat storage, so it understates what pre-cooling can do for peak load.
 - The timetable repeats weekly and attendance is a single value per class, not a live count.
 - Humidity affects the decision through a penalty and a mould guard, not a full moisture model.
-- The scheduler assumes jobs in a batch are known up front and run independently; it ignores arrival times and priorities.
+- The scheduler assumes jobs in a batch are known up front and run independently; it ignores arrival times and priorities. The Slurm-style baseline approximates a real queue.
 - No authentication: run it on a trusted network only.
 
 ## Roadmap
