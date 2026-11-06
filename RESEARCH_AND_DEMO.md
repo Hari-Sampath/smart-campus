@@ -28,15 +28,6 @@ The deployment path is feasible where compatible control points and operational 
 
 ASHRAE Standard 135 (BACnet) defines communications for monitoring and control of HVAC and other building systems. A building-specific gateway and point mapping are still required; the protocol itself does not make every AC unit controllable. Slurm documents `SuspendProgram`/`ResumeProgram`, timeouts, rates and failure behavior for node power saving. Neither adapter is implemented against real hardware here.
 
-## Three-minute talk track
-
-1. **0:00–0:25 — Problem.** “Campuses cool empty rooms and leave batch clusters fully powered. Seva focuses on these two loads with decisions a facilities or cluster team can inspect. Today this is a simulation.”
-2. **0:25–1:15 — Classroom decision.** Open Classroom AC, point to the “Why” column and compare a long empty gap that switches off and pre-cools with a short gap that stays on. Explain the planner's modeled arrival-temperature guard.
-3. **1:15–1:45 — Evidence and uncertainty.** Return to Overview, lead with savings versus 24°C always-on and call it a projection. Show the comfort proxy and move the three assumption sliders. Run all eight endpoint combinations. State that actual comfort and savings require sensor and meter calibration.
-4. **1:45–2:20 — Server trade-off.** Open Server scheduling and move the fastest-to-greenest slider. Show same-finish energy savings first; explain that the larger reduction trades away roughly three times the completion time and suits only deferrable batches.
-5. **2:20–2:45 — Benchmark.** Compare the same jobs and machines against Slurm-style first-free, MCT and Min-Min. Explain why round-robin is not a representative batch-cluster baseline.
-6. **2:45–3:00 — Deployment.** Run the dry-run log. Show valid requests and blocked unsafe examples. Describe point mapping, shadow mode, a small operator-approved pilot and meter/sensor verification.
-
 ## Sources
 
 - Bureau of Energy Efficiency, [FAQ on optimum AC temperature settings](https://beeindia.gov.in/sites/default/files/press_releases/FAQ.pdf) and [Light Commercial AC Schedule 24](https://beeindia.gov.in/sites/default/files/Schedule_24_LCAC.pdf). The FAQ says comfort depends on humidity and air movement as well as temperature; the schedule specifies a 24°C default for covered labelled light-commercial units. It is not a claim that all campus equipment is covered.
